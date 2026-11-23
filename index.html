@@ -47,6 +47,12 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18p
 .konto-split b{color:var(--text);font-weight:600}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
 
+.kpis2{grid-template-columns:repeat(4,1fr)}
+.mini{display:flex;align-items:center;gap:14px;padding:14px 18px}
+.mini .ico{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:20px;flex:none}
+.mini span{display:block;font-size:12px;color:var(--leise);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.mini b{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums}
+.mini small{color:var(--leiser);font-size:12px;margin-left:6px}
 .reihe2{grid-template-columns:1.25fr 2fr}
 .reihe3{grid-template-columns:repeat(4,1fr)}
 .reihe4{grid-template-columns:1fr 1fr 1.2fr}
@@ -107,7 +113,7 @@ td .titel{max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellip
 #sperre .fehler{color:var(--rot);font-size:13px;min-height:16px}
 
 @media (max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}.reihe2,.reihe4{grid-template-columns:1fr}.reihe3{grid-template-columns:repeat(2,1fr)}}
-@media (max-width:640px){.wrap{padding:14px 16px 30px}.kpis{grid-template-columns:1fr 1fr}.reihe3{grid-template-columns:1fr 1fr}.kpi .wert{font-size:26px}.top .zahlen b{font-size:18px}header .spacer{display:none}}
+@media (max-width:640px){.kpis2{grid-template-columns:1fr 1fr}.wrap{padding:14px 16px 30px}.kpis{grid-template-columns:1fr 1fr}.reihe3{grid-template-columns:1fr 1fr}.kpi .wert{font-size:26px}.top .zahlen b{font-size:18px}header .spacer{display:none}}
 </style>
 </head>
 <body>
@@ -134,6 +140,7 @@ td .titel{max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellip
   </header>
 
   <section class="grid kpis" id="kpis"></section>
+  <section class="grid kpis2" id="kpis2" style="margin-top:16px"></section>
 
   <section class="grid reihe2" style="margin-top:16px">
     <div class="karte top" id="top"></div>
@@ -201,7 +208,7 @@ function liveHeute(konto){
 function tagWerte(){
   // {datum: {konto: {gmv,artikel,provision,views,follower}}}
   const m = {};
-  for(const t of D.tage){ (m[t.datum] ??= {})[t.konto] = {gmv:t.gmv,artikel:t.artikel,provision:t.provision,views:t.views,follower:t.follower,status:t.verkauf_status}; }
+  for(const t of D.tage){ (m[t.datum] ??= {})[t.konto] = {gmv:t.gmv,artikel:t.artikel,provision:t.provision,klicks:t.klicks,views:t.views,follower:t.follower,status:t.verkauf_status}; }
   // Live-Stände (letzter Stand je Tag) füllen Tage ohne Endstand
   const letzte = {};
   for(const e of D.umsatz_live){ letzte[e.zeit.slice(0,10)+'|'+e.konto] = e; }
@@ -261,6 +268,17 @@ function kpis(b, tw){
   html += `<div class="karte kpi"><div class="glow" style="background:var(--lila)"></div><h3>Neue Follower</h3><div class="wert">${f==null?'–':(f>=0?'+':'')+zahl(f)}</div>
     <div class="unter">${veraenderung(f,fv)}${fv!=null?`<span>vorher ${zahl(fv)}</span>`:''}</div></div>`;
   document.getElementById('kpis').innerHTML = html;
+}
+function kpis2(b, tw){
+  const v = D.videos.filter(x=>kontoOk(x.konto) && inB(x.datum,b) && !x.geplant);
+  const kl = kennzahl(b,'klicks',tw), sk = kennzahl(b,'gmv',tw);
+  const m = [
+    {i:'👆',t:'Produktklicks',w:kl,f:'#25d0e0',z:kl&&kennzahl(b,'artikel',tw)?`${(kennzahl(b,'artikel',tw)/kl*100).toLocaleString('de-DE',{maximumFractionDigits:1})} % kaufen`:''},
+    {i:'❤️',t:'Likes',w:summe(v,x=>x.likes),f:'#ff5fa2',z:'auf Videos im Zeitraum'},
+    {i:'💬',t:'Kommentare',w:summe(v,x=>x.kommentare),f:'#a78bfa',z:''},
+    {i:'↗️',t:'Shares',w:summe(v,x=>x.shares),f:'#f5c451',z:`${zahl(summe(v,x=>x.gespeichert))} gespeichert`},
+  ];
+  document.getElementById('kpis2').innerHTML = m.map(x=>`<div class="karte mini"><div class="ico" style="background:${x.f}22">${x.i}</div><div><span>${x.t}</span><b>${zahl(x.w)}</b><small>${x.z}</small></div></div>`).join('');
 }
 function topTag(tw){
   let best=null;
@@ -339,9 +357,9 @@ function feed(b){
     <div class="r">+${eur(e.gmv)}<small>${zahl(e.artikel)} Art.</small></div></div>`).join('') : '<div class="leer">Noch keine Einzelverkäufe</div>');
 }
 function koop(){
-  const l = D.handy.filter(e=>kontoOk(e.konto) && (e.art==='kooperation'||e.art==='angebot')).sort((a,c)=>a.zeit<c.zeit?1:-1).slice(0,40);
+  const l = D.handy.filter(e=>kontoOk(e.konto) && (e.art==='kooperation'||e.art==='angebot')).sort((a,c)=>a.zeit<c.zeit?1:-1).slice(0,12);
   document.getElementById('koop').innerHTML = l.length ? l.map(e=>`<div class="eintrag"><div class="ico" style="background:${e.art==='angebot'?'#f5c45122':'#a78bfa22'}">${e.art==='angebot'?'🏷️':'🤝'}</div>
-    <div><div class="t">${esc(e.titel)}</div><div class="s">${esc(e.text)}</div></div><div class="r"><small>${NAME[e.konto]}<br>${tagKurz(e.zeit.slice(0,10))}</small></div></div>`).join('') : '<div class="leer">Keine Anfragen</div>';
+    <div><div class="t">${esc(e.titel)}</div><div class="s">${e.art==='angebot'?'Angebot':'Kooperationsanfrage'}${(e.text||'').startsWith('(Agentur)')?' · Agentur':''}${e.produkte?' · '+esc(e.produkte):''}</div></div><div class="r"><small>${NAME[e.konto]}<br>${tagKurz(e.zeit.slice(0,10))}</small></div></div>`).join('') : '<div class="leer">Keine Anfragen</div>';
 }
 function topVideos(b){
   const v = D.videos.filter(x=>kontoOk(x.konto) && !x.geplant);
@@ -371,7 +389,7 @@ function alles(){
   document.querySelectorAll('#zeitraum button').forEach(x=>x.classList.toggle('an',x.dataset.z===zr));
   document.querySelectorAll('#konto button').forEach(x=>x.classList.toggle('an',x.dataset.k===kt));
   document.getElementById('stand').textContent = `${b.name} · Daten vom ${D.stand.erzeugt} · aktualisiert sich alle 2 Min.`;
-  kpis(b,tw); topTag(tw); tageChart(b,tw); kennzahlen(b); traffic(b); alter(b); feed(b); koop(); topVideos(b);
+  kpis(b,tw); kpis2(b,tw); topTag(tw); tageChart(b,tw); kennzahlen(b); traffic(b); alter(b); feed(b); koop(); topVideos(b);
 }
 
 /* ---------- Laden (verschlüsselt online, offen lokal) ---------- */
