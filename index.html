@@ -214,7 +214,7 @@ function tagWerte(){
   for(const e of D.umsatz_live){ letzte[e.zeit.slice(0,10)+'|'+e.konto] = e; }
   for(const [k,e] of Object.entries(letzte)){
     const [d,konto] = k.split('|'); const w = ((m[d] ??= {})[konto] ??= {});
-    if(w.gmv==null){ w.gmv=e.gmv; w.artikel=e.artikel; w.live=e.zeit; }
+    if(w.gmv==null){ w.gmv=e.gmv; w.artikel=e.artikel; w.live=e.zeit; if(e.provision!=null) w.provision=e.provision; }
   }
   return m;
 }
