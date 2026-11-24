@@ -208,7 +208,7 @@ function liveHeute(konto){
 function tagWerte(){
   // {datum: {konto: {gmv,artikel,provision,views,follower}}}
   const m = {};
-  for(const t of D.tage){ (m[t.datum] ??= {})[t.konto] = {gmv:t.gmv,artikel:t.artikel,provision:t.provision,klicks:t.klicks,views:t.views,likes:t.likes,kommentare:t.kommentare,shares:t.shares,neue_follower:t.neue_follower,profilaufrufe:t.profilaufrufe,follower:t.follower,status:t.verkauf_status}; }
+  for(const t of D.tage){ (m[t.datum] ??= {})[t.konto] = {gmv:t.gmv,artikel:t.artikel,provision:t.provision,klicks:t.klicks,views:t.views,schaetz:(t.views_zeitraum||'').includes('Schätzung'),likes:t.likes,kommentare:t.kommentare,shares:t.shares,neue_follower:t.neue_follower,profilaufrufe:t.profilaufrufe,follower:t.follower,status:t.verkauf_status}; }
   // Live-Stände (letzter Stand je Tag) füllen Tage ohne Endstand
   const letzte = {};
   for(const e of D.umsatz_live){ letzte[e.zeit.slice(0,10)+'|'+e.konto] = e; }
@@ -259,9 +259,10 @@ function kpis(b, tw){
     {t:'Verkaufte Artikel', f:'artikel', fmt:zahl, farbe:'var(--pink)'},
     {t:'Neue Aufrufe', f:'views', fmt:zahl, farbe:'var(--blau)'},
   ];
+  let geschaetzt=false; for(const [d,ks] of Object.entries(tw)){ if(inB(d,b)) for(const [kk,w] of Object.entries(ks)){ if(kontoOk(kk)&&w.schaetz) geschaetzt=true; } }
   let html = k.map(x=>{ const v=kennzahl(b,x.f,tw), vv=kennzahl(vb,x.f,tw);
-    return `<div class="karte kpi"><div class="glow" style="background:${x.farbe}"></div><h3>${x.t}</h3><div class="wert">${x.fmt(v)}</div>
-      <div class="unter">${veraenderung(v,vv)}${vv!=null?`<span>vorher ${x.fmt(vv)}</span>`:''}</div><div class="unter">${proKonto(b,x.f,tw)}</div>${x.f==='views'&&v==null?'<div class="unter">TikTok liefert Aufrufe erst nach 1–2 Tagen</div>':''}</div>`}).join('');
+    return `<div class="karte kpi"><div class="glow" style="background:${x.farbe}"></div><h3>${x.t}</h3><div class="wert">${x.f==='views'&&geschaetzt&&v!=null?'≈ ':''}${x.fmt(v)}</div>
+      <div class="unter">${veraenderung(v,vv)}${vv!=null?`<span>vorher ${x.fmt(vv)}</span>`:''}</div><div class="unter">${proKonto(b,x.f,tw)}</div>${x.f==='views'&&v==null?'<div class="unter">TikTok liefert Aufrufe erst nach 1–2 Tagen</div>':''}${x.f==='views'&&geschaetzt&&v!=null?'<div class="unter">≈ Schätzung aus der Video-Liste (meist ~30 % zu hoch) – wird durch den TikTok-Tageswert ersetzt</div>':''}</div>`}).join('');
   // Provision: wie viele Umsatz-Tage haben schon eine Provision?
   let mitU=0, mitP=0; for(const [d,ks] of Object.entries(tw)){ if(!inB(d,b)) continue; for(const [k,w] of Object.entries(ks)){ if(kontoOk(k)&&w.gmv){ mitU++; if(w.provision!=null) mitP++; } } }
   if(mitU && mitP<mitU) html = html.replace('<h3>Provision</h3>', `<h3>Provision</h3><div class="stand" style="position:absolute;top:18px;right:20px">erfasst ${mitP}/${mitU} Tage</div>`);
