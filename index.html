@@ -208,7 +208,7 @@ function liveHeute(konto){
 function tagWerte(){
   // {datum: {konto: {gmv,artikel,provision,views,follower}}}
   const m = {};
-  for(const t of D.tage){ (m[t.datum] ??= {})[t.konto] = {gmv:t.gmv,artikel:t.artikel,provision:t.provision,klicks:t.klicks,views:t.views,follower:t.follower,status:t.verkauf_status}; }
+  for(const t of D.tage){ (m[t.datum] ??= {})[t.konto] = {gmv:t.gmv,artikel:t.artikel,provision:t.provision,klicks:t.klicks,views:t.views,likes:t.likes,kommentare:t.kommentare,shares:t.shares,neue_follower:t.neue_follower,profilaufrufe:t.profilaufrufe,follower:t.follower,status:t.verkauf_status}; }
   // Live-Stände (letzter Stand je Tag) füllen Tage ohne Endstand
   const letzte = {};
   for(const e of D.umsatz_live){ letzte[e.zeit.slice(0,10)+'|'+e.konto] = e; }
@@ -225,6 +225,7 @@ function kennzahl(b, feld, tw){
   return s;
 }
 function followerZuwachs(b){
+  const st = kennzahl(b,'neue_follower',tagWerte()); if(st!=null) return st;
   let ges=null;
   for(const k of KONTEN){ if(!kontoOk(k)) continue;
     const f = D.handy.filter(e=>e.konto===k && e.art==='follower' && e.anzahl!=null).sort((a,c)=>a.zeit<c.zeit?-1:1);
@@ -260,7 +261,7 @@ function kpis(b, tw){
   ];
   let html = k.map(x=>{ const v=kennzahl(b,x.f,tw), vv=kennzahl(vb,x.f,tw);
     return `<div class="karte kpi"><div class="glow" style="background:${x.farbe}"></div><h3>${x.t}</h3><div class="wert">${x.fmt(v)}</div>
-      <div class="unter">${veraenderung(v,vv)}${vv!=null?`<span>vorher ${x.fmt(vv)}</span>`:''}</div><div class="unter">${proKonto(b,x.f,tw)}</div></div>`}).join('');
+      <div class="unter">${veraenderung(v,vv)}${vv!=null?`<span>vorher ${x.fmt(vv)}</span>`:''}</div><div class="unter">${proKonto(b,x.f,tw)}</div>${x.f==='views'&&v==null?'<div class="unter">TikTok liefert Aufrufe erst nach 1–2 Tagen</div>':''}</div>`}).join('');
   // Provision: wie viele Umsatz-Tage haben schon eine Provision?
   let mitU=0, mitP=0; for(const [d,ks] of Object.entries(tw)){ if(!inB(d,b)) continue; for(const [k,w] of Object.entries(ks)){ if(kontoOk(k)&&w.gmv){ mitU++; if(w.provision!=null) mitP++; } } }
   if(mitU && mitP<mitU) html = html.replace('<h3>Provision</h3>', `<h3>Provision</h3><div class="stand" style="position:absolute;top:18px;right:20px">erfasst ${mitP}/${mitU} Tage</div>`);
@@ -274,9 +275,9 @@ function kpis2(b, tw){
   const kl = kennzahl(b,'klicks',tw), sk = kennzahl(b,'gmv',tw);
   const m = [
     {i:'👆',t:'Produktklicks',w:kl,f:'#25d0e0',z:kl&&kennzahl(b,'artikel',tw)?`${(kennzahl(b,'artikel',tw)/kl*100).toLocaleString('de-DE',{maximumFractionDigits:1})} % kaufen`:''},
-    {i:'❤️',t:'Likes',w:summe(v,x=>x.likes),f:'#ff5fa2',z:'auf Videos im Zeitraum'},
-    {i:'💬',t:'Kommentare',w:summe(v,x=>x.kommentare),f:'#a78bfa',z:''},
-    {i:'↗️',t:'Shares',w:summe(v,x=>x.shares),f:'#f5c451',z:`${zahl(summe(v,x=>x.gespeichert))} gespeichert`},
+    {i:'❤️',t:'Likes',w:kennzahl(b,'likes',tw),f:'#ff5fa2',z:'ganzes Konto'},
+    {i:'💬',t:'Kommentare',w:kennzahl(b,'kommentare',tw),f:'#a78bfa',z:''},
+    {i:'↗️',t:'Shares',w:kennzahl(b,'shares',tw),f:'#f5c451',z:`${zahl(kennzahl(b,'profilaufrufe',tw))} Profilaufrufe`},
   ];
   document.getElementById('kpis2').innerHTML = m.map(x=>`<div class="karte mini"><div class="ico" style="background:${x.f}22">${x.i}</div><div><span>${x.t}</span><b>${zahl(x.w)}</b><small>${x.z}</small></div></div>`).join('');
 }
