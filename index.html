@@ -56,6 +56,8 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18p
 .reihe2{grid-template-columns:1.25fr 2fr}
 .reihe3{grid-template-columns:repeat(4,1fr)}
 .reihe4{grid-template-columns:1fr 1fr 1.2fr}
+.reihe5{grid-template-columns:1.6fr 1fr}
+.grid>*{min-width:0}
 
 /* Top-Tag */
 .top{background:linear-gradient(160deg,#2a2211 0%,#1a1710 45%,#141826 100%);border-color:#5a4718}
@@ -85,7 +87,7 @@ header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18p
 
 .liste{display:flex;flex-direction:column;gap:8px;max-height:340px;overflow:auto;padding-right:4px}
 .liste::-webkit-scrollbar{width:6px}.liste::-webkit-scrollbar-thumb{background:var(--rand);border-radius:9px}
-.eintrag{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;background:var(--bg2);border:1px solid var(--rand);border-radius:12px;padding:10px 12px}
+.eintrag{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;background:var(--bg2);border:1px solid var(--rand);border-radius:12px;padding:10px 12px}
 .eintrag .ico{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:16px}
 .eintrag .t{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .eintrag .s{font-size:12px;color:var(--leise);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -112,8 +114,21 @@ td .titel{max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellip
 #sperre button{background:linear-gradient(135deg,var(--pink),var(--lila));border:0;border-radius:10px;color:#fff;font:700 15px Inter,sans-serif;padding:12px;cursor:pointer}
 #sperre .fehler{color:var(--rot);font-size:13px;min-height:16px}
 
-@media (max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}.reihe2,.reihe4{grid-template-columns:1fr}.reihe3{grid-template-columns:repeat(2,1fr)}}
-@media (max-width:640px){.kpis2{grid-template-columns:1fr 1fr}.wrap{padding:14px 16px 30px}.kpis{grid-template-columns:1fr 1fr}.reihe3{grid-template-columns:1fr 1fr}.kpi .wert{font-size:26px}.top .zahlen b{font-size:18px}header .spacer{display:none}}
+@media (max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}.reihe2,.reihe4,.reihe5{grid-template-columns:1fr}.reihe3{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:640px){.kpis2{grid-template-columns:1fr 1fr}.wrap{padding:14px 16px 30px}.kpis{grid-template-columns:1fr 1fr}.reihe3{grid-template-columns:1fr 1fr}.kpi .wert{font-size:26px}.top .zahlen b{font-size:18px}header .spacer{display:none}
+  .liste{max-height:none}
+  .eintrag .t,.eintrag .s{white-space:normal;overflow:visible}
+  .eintrag .t{font-size:13.5px;line-height:1.3}
+  #topVideos tr:first-child{display:none}
+  #topVideos,#topVideos tbody{display:block;width:100%}
+  #topVideos tr{background:var(--bg2);border:1px solid var(--rand);border-radius:12px;padding:10px 12px;margin-bottom:8px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 10px}
+  #topVideos td{display:block;border:0;padding:0;text-align:left}
+  #topVideos td.n{text-align:left}
+  #topVideos td:first-child{grid-column:1/-1}
+  #topVideos td:first-child .titel{max-width:none;white-space:normal;font-weight:600;line-height:1.3}
+  #topVideos td[data-l]::before{content:attr(data-l);display:block;font-size:10.5px;color:var(--leiser);text-transform:uppercase;letter-spacing:.04em}
+  #topVideos td.leer{grid-column:1/-1;text-align:center}
+}
 </style>
 </head>
 <body>
@@ -155,7 +170,7 @@ td .titel{max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellip
     <div class="karte"><h3>Live vom Handy</h3><div class="liste" id="feed"></div></div>
   </section>
 
-  <section class="grid" style="margin-top:16px;grid-template-columns:1.6fr 1fr">
+  <section class="grid reihe5" style="margin-top:16px">
     <div class="karte"><h3>Beste Videos im Zeitraum</h3><div style="overflow:auto"><table id="topVideos"></table></div></div>
     <div class="karte"><h3>Kooperationen & Angebote</h3><div class="liste" id="koop"></div></div>
   </section>
@@ -375,8 +390,8 @@ function topVideos(b){
   if(!zeilen.length){ kopf='Aufrufe';
     zeilen = v.filter(x=>inB(x.datum,b)).sort((a,c)=>(c.views||0)-(a.views||0)).slice(0,8).map(x=>({titel:x.titel,konto:x.konto,gepostet:x.datum,gmv:x.gmv,artikel:x.artikel,views:x.views,w:x.wiedergabe_s})); }
   document.getElementById('topVideos').innerHTML = `<tr><th>Video</th><th>Konto</th><th>Gepostet</th><th class="n">Umsatz</th><th class="n">Artikel</th><th class="n">Aufrufe</th><th class="n">Watchtime</th></tr>` +
-    (zeilen.length ? zeilen.map(x=>`<tr><td><span class="titel" title="${esc(x.titel)}">${esc(x.titel)}</span></td><td><span class="dot" style="background:${FARBE[x.konto]}"></span>${NAME[x.konto]}</td><td>${tagKurz(String(x.gepostet).slice(0,10))}</td>
-      <td class="n">${eur(x.gmv)}</td><td class="n">${zahl(x.artikel)}</td><td class="n">${zahl(x.views)}</td><td class="n">${x.w==null?'–':x.w.toLocaleString('de-DE',{maximumFractionDigits:1})+' s'}</td></tr>`).join('')
+    (zeilen.length ? zeilen.map(x=>`<tr><td><span class="titel" title="${esc(x.titel)}">${esc(x.titel)}</span></td><td data-l="Konto"><span class="dot" style="background:${FARBE[x.konto]}"></span>${NAME[x.konto]}</td><td data-l="Gepostet">${tagKurz(String(x.gepostet).slice(0,10))}</td>
+      <td class="n" data-l="Umsatz">${eur(x.gmv)}</td><td class="n" data-l="Artikel">${zahl(x.artikel)}</td><td class="n" data-l="Aufrufe">${zahl(x.views)}</td><td class="n" data-l="Watchtime">${x.w==null?'–':x.w.toLocaleString('de-DE',{maximumFractionDigits:1})+' s'}</td></tr>`).join('')
      : '<tr><td colspan="7" class="leer">Keine Videos im Zeitraum</td></tr>');
 }
 function zeichne(id, cfg){
